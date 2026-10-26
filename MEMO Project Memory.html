@@ -1,0 +1,839 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MEMO Project Memory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: night-sky single column; a living memory graph opens, story scrolls, the page ends on the night shift. Deliberately dark-only. */
+:root{
+  --ink:#05060A; --panel:#0D0F16; --panel2:#12141D; --rule:#1D2130; --text:#EEEBF3; --muted:#8C90A4;
+  --amber:#FFB547; --violet:#8B7CFF; --teal:#3EE6C1; --red:#FF6B6B; --moon:#C9C1FF;
+  --serif:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans:"Geist", "Segoe UI", system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font:16px/1.6 var(--sans);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--ink)}
+.g{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1160px;margin:0 auto}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:6px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:700;letter-spacing:-.02em}
+.serif{font-family:var(--serif);font-weight:400;font-style:italic;letter-spacing:-.01em}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--amber)}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono)}
+section{padding-block:96px}
+.sh{display:grid;gap:14px;max-width:720px;margin-bottom:44px}
+.sh h2{font-size:clamp(32px,5vw,54px);line-height:1.04}
+.sh p{margin:0;color:var(--muted);font-size:18px}
+.center{margin-inline:auto;text-align:center;justify-items:center}
+.reveal{transition:transform .8s cubic-bezier(.2,.7,.2,1),opacity .8s}
+.reveal.pre{transform:translateY(18px);opacity:.35}
+
+/* nav */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:rgba(5,6,10,.78);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
+nav .wrap{display:flex;align-items:center;gap:24px;padding-block:14px}
+.logo{font:600 20px/1 var(--mono);text-decoration:none}
+.logo b{color:var(--amber);animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.nl{display:flex;gap:26px;margin-left:auto;align-items:center;font-size:15px}
+.nl a{text-decoration:none;color:#B5B8C8}
+.nl a:hover{color:var(--text)}
+.pill{display:inline-flex;align-items:center;gap:8px;font:600 15px/1 var(--sans);padding:13px 20px;border-radius:999px;text-decoration:none;border:1px solid #2B3044;color:var(--text);background:transparent;cursor:pointer}
+.pill.a{background:var(--amber);color:#1A1205;border-color:var(--amber)}
+.pill:hover{filter:brightness(1.1)}
+.nl .pill{padding:9px 15px;font-size:14px}
+
+/* hero */
+.hero{position:relative;padding-block:56px 40px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;position:relative;z-index:2}
+#graph{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.hero h1{font-size:clamp(46px,7.2vw,92px);line-height:.95;margin-top:20px}
+.strike{color:#4B5068;position:relative;white-space:nowrap}
+.strike::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:5px;background:var(--red);border-radius:3px;transform-origin:left;animation:strike .7s 1.1s cubic-bezier(.6,0,.2,1) both}
+@keyframes strike{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.hero h1 .serif{color:var(--amber);font-size:1.08em;display:inline-block;animation:rise .8s 1.6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{transform:translateY(.3em);opacity:.2}to{transform:none;opacity:1}}
+.lead{font-size:19px;color:#A9ADBF;max-width:48ch;margin:24px 0 30px}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.cmd{display:inline-flex;gap:14px;align-items:center;margin-top:22px;background:rgba(13,15,22,.85);border:1px solid var(--rule);border-radius:12px;padding:10px 10px 10px 16px;font:500 14px var(--mono)}
+.cmd span::before{content:"$ ";color:var(--amber)}
+.copy{font:500 12px var(--mono);background:transparent;border:1px solid #2B3044;color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.chip{font:500 12px var(--mono);color:var(--muted);border:1px solid var(--rule);border-radius:999px;padding:6px 12px;background:rgba(13,15,22,.7)}
+.chip b{color:var(--teal);font-weight:600}
+
+/* playcards */
+.deck-wrap{position:relative;padding-block:30px 10px;overflow:hidden}
+.deck{position:relative;height:440px;perspective:1400px}
+.card{position:absolute;left:50%;top:20px;width:320px;height:400px;margin-left:-160px;border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:14px;background:var(--panel2);border:1px solid #232838;transition:transform .9s cubic-bezier(.2,.7,.2,1),opacity .9s,filter .9s;box-shadow:0 30px 60px rgba(0,0,0,.5);cursor:pointer}
+.card .tagline{margin-top:auto;font:500 12px var(--mono);letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.card.hot{background:linear-gradient(160deg,#9C8DFF 0%,#5B49E8 55%,#3B2BC4 100%);border-color:transparent}
+.card.hot .tagline{color:rgba(255,255,255,.75)}
+.card.paper{background:linear-gradient(170deg,#ECE6D8,#BDB6A6);color:#1B1A17;border-color:transparent}
+.card.paper .tagline{color:#6B665A}
+.ct{font:500 13px var(--mono);color:var(--muted)}
+.rows{display:grid;gap:10px}
+.row{border:1px solid #262B3C;border-radius:12px;padding:11px 13px;background:rgba(5,6,10,.4)}
+.row.sel{border-color:#5C6BFF;background:rgba(92,107,255,.12)}
+.row b{display:block;font-size:15px}
+.row span{font-size:13px;color:var(--muted)}
+.big{font-family:var(--serif);font-style:italic;font-size:44px;line-height:1.02}
+.quote{font-family:var(--serif);font-style:italic;font-size:27px;line-height:1.12}
+.quote.dim{color:#7E8296}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.b{font:500 12px var(--mono);padding:6px 11px;border-radius:999px;border:1px solid #3A4060;color:#B9C1FF}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:8px;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.lines{display:grid;gap:9px}
+.lines i{display:block;height:7px;border-radius:4px;background:rgba(27,26,23,.22)}
+.deck-cap{max-width:640px;margin:26px auto 0;text-align:center;color:#A9ADBF;font-size:19px}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.dots button{width:8px;height:8px;border-radius:99px;border:0;background:#2B3044;cursor:pointer;transition:width .4s,background .4s;padding:0}
+.dots button.on{width:28px;background:var(--amber)}
+
+/* story */
+.story{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+.tl{display:grid;gap:30px;border-left:2px solid var(--rule);padding-left:28px}
+.tl div{transition:opacity .6s,color .6s}
+.tl .t{font:500 13px var(--mono);color:var(--muted)}
+.tl .x{font-size:clamp(22px,2.6vw,28px);font-weight:700;line-height:1.2;margin-top:6px}
+.tl .bad .x{color:var(--red)}
+.tl .fade{opacity:.45}
+.rings{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.ring{display:grid;gap:10px;justify-items:start}
+.ring svg{width:140px;height:140px}
+.ring p{margin:0;color:var(--muted);font-size:15px}
+.src{font:400 12px var(--mono);color:var(--muted);margin-top:22px}
+
+/* pipeline */
+.pipe{background:var(--panel);border:1px solid var(--rule);border-radius:24px;padding:16px;overflow-x:auto}
+.pipe svg{display:block;min-width:900px;width:100%;height:auto}
+.node{cursor:pointer}
+.node rect{transition:stroke .3s,fill .3s}
+.node:hover rect,.node.on rect{stroke:var(--amber);fill:#17120A}
+.detail{margin-top:18px;display:grid;grid-template-columns:260px 1fr;gap:24px;background:var(--panel);border:1px solid var(--rule);border-radius:20px;padding:24px;min-height:190px}
+.detail h3{font-size:26px}
+.detail .k{font:500 12px var(--mono);letter-spacing:.16em;color:var(--amber)}
+.detail ul{margin:0;padding-left:18px;display:grid;gap:8px;color:#C4C7D4}
+.detail pre{margin:12px 0 0;font:400 13px/1.6 var(--mono);background:#07080C;border:1px solid var(--rule);border-radius:10px;padding:12px;overflow-x:auto;color:#D9D5CC}
+.detail>div{min-width:0}
+.hint{font:500 12px var(--mono);color:var(--muted);margin-top:12px}
+
+/* testing */
+.tgrid{display:grid;grid-template-columns:340px 1fr;gap:24px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:22px;padding:26px;min-width:0}
+.gauge{display:grid;justify-items:center;gap:12px;text-align:center}
+.gauge svg{width:220px;height:220px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-top:6px}
+.mini div{border:1px solid var(--rule);border-radius:12px;padding:10px 6px}
+.mini b{display:block;font:600 20px var(--mono)}
+.mini span{font-size:12px;color:var(--muted)}
+.bars{display:grid;gap:11px}
+.bar{display:grid;grid-template-columns:150px 1fr 34px;gap:12px;align-items:center;font-size:14px}
+.bar .tr{height:10px;border-radius:6px;background:#161925;overflow:hidden}
+.bar .tr i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--violet),var(--amber));transform-origin:left;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.bar .n{font:600 14px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.bars.pre i{transform:scaleX(.02)!important}
+.weak{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.tag{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:7px 10px;border-radius:7px}
+.tag.ok{color:var(--teal);background:rgba(62,230,193,.1)}
+.tag.warn{color:var(--amber);background:rgba(255,181,71,.1)}
+.tag.bad{color:var(--red);background:rgba(255,107,107,.1)}
+.tag.v{color:var(--moon);background:rgba(139,124,255,.14)}
+
+/* scout live */
+.scout{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:stretch}
+.issue-list{display:grid;gap:10px}
+.issue{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1px solid var(--rule);border-radius:14px;padding:13px 15px;background:var(--panel2)}
+.issue .ic{width:18px;height:18px;border-radius:50%;border:2px solid var(--teal)}
+.issue.done .ic{background:var(--teal)}
+.issue.done .ttl{color:var(--muted);text-decoration:line-through}
+.issue .ttl{font-size:15px;min-width:0}
+.costbig{font:600 clamp(48px,7vw,76px)/1 var(--mono);color:var(--teal);font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.kv div{border-top:1px solid var(--rule);padding-top:10px}
+.kv b{display:block;font:600 20px var(--mono)}
+.kv span{font-size:13px;color:var(--muted)}
+
+/* night shift */
+.night{position:relative;background:radial-gradient(1200px 600px at 80% 0%,#1A1640 0%,#0A0A18 45%,var(--ink) 80%);overflow:hidden}
+#stars{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.night .wrap{position:relative;z-index:1}
+.moon{position:absolute;right:8%;top:70px;width:90px;height:90px;border-radius:50%;box-shadow:-22px 10px 0 0 var(--moon);transform:rotate(-20deg);z-index:1;filter:drop-shadow(0 0 30px rgba(201,193,255,.35))}
+.agents{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center}
+.agent{background:rgba(13,15,22,.85);border:1px solid #2B2A55;border-radius:22px;padding:24px;display:grid;gap:12px;min-width:0}
+.agent .av{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font:700 18px var(--mono)}
+.agent h3{font-size:24px}
+.agent p{margin:0;color:#B7B9CC;font-size:15px}
+.agent ul{margin:0;padding-left:18px;color:#B7B9CC;font-size:14px;display:grid;gap:6px}
+.handoff{display:grid;justify-items:center;gap:8px;font:500 12px var(--mono);color:var(--moon);text-align:center}
+.handoff svg{width:120px;height:40px}
+.clock{margin-top:30px;display:grid;grid-template-columns:repeat(5,1fr);gap:0;position:relative}
+.clock::before{content:"";position:absolute;left:10%;right:10%;top:9px;height:2px;background:linear-gradient(90deg,var(--violet),var(--moon),var(--teal))}
+.clock div{display:grid;justify-items:center;gap:8px;text-align:center;position:relative;padding-inline:6px}
+.clock i{width:20px;height:20px;border-radius:50%;background:var(--ink);border:3px solid var(--moon)}
+.clock div:last-child i{border-color:var(--teal);background:var(--teal)}
+.clock b{font:600 14px var(--mono);color:var(--moon)}
+.clock span{font-size:14px;color:#B7B9CC;max-width:20ch}
+.safe{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* mcp */
+.mcp{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.mcp svg{width:100%;height:auto;display:block}
+.vs{display:grid;gap:14px}
+.vs .box{padding:20px}
+.vs h3{font-size:18px;margin-bottom:6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tools code{font:500 12.5px var(--mono);background:#07080C;border:1px solid var(--rule);border-radius:8px;padding:6px 9px;color:var(--amber)}
+
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;position:relative}
+.road::before{content:"";position:absolute;left:0;right:0;top:11px;height:3px;background:linear-gradient(90deg,var(--teal) 0 45%,var(--amber) 45% 70%,#2B2A55 70%)}
+.rs{display:grid;gap:8px;position:relative;padding-top:36px;min-width:0}
+.rs::before{content:"";position:absolute;top:0;left:0;width:22px;height:22px;border-radius:50%;background:var(--ink);border:3px solid var(--c)}
+.rs .k{font:500 12px var(--mono);letter-spacing:.14em;color:var(--c)}
+.rs h3{font-size:20px}
+.rs p{margin:0;font-size:14px;color:var(--muted)}
+
+/* faq */
+.faq{display:grid;gap:12px;max-width:860px;margin:0 auto}
+details{background:var(--panel);border:1px solid var(--rule);border-radius:18px;padding:4px 22px}
+details[open]{border-color:#3A3366}
+summary{cursor:pointer;list-style:none;padding:18px 0;font-size:18px;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:400 24px var(--mono);color:var(--amber);transition:transform .3s}
+details[open] summary::after{transform:rotate(45deg)}
+details .a{padding:0 0 20px;color:#BFC2D2;display:grid;gap:10px}
+details .a p{margin:0}
+details .feat{font:500 11px var(--mono);letter-spacing:.14em;color:var(--amber);margin-right:10px}
+
+/* start */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s;padding:0;margin:0}
+.steps li{list-style:none;background:var(--panel);border:1px solid var(--rule);border-radius:20px;padding:24px;display:grid;gap:10px;align-content:start;min-width:0}
+.steps li::before{counter-increment:s;content:"STEP " counter(s);font:500 12px var(--mono);letter-spacing:.16em;color:var(--amber)}
+.steps h3{font-size:20px}
+.steps p{margin:0;color:var(--muted);font-size:14px}
+.steps code{font:500 13px var(--mono);background:#07080C;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;display:block;overflow-x:auto;white-space:nowrap}
+.final{margin-top:28px;text-align:center;display:grid;gap:22px;justify-items:center;padding:60px 20px;border-radius:28px;background:radial-gradient(600px 260px at 50% 0%,rgba(255,181,71,.18),transparent 70%),var(--panel);border:1px solid var(--rule)}
+.final h2{font-size:clamp(34px,5vw,58px)}
+footer{border-top:1px solid var(--rule);padding-block:28px}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:400 13px var(--mono);color:var(--muted)}
+
+/* release, value, why, feedback, credits */
+.release{background:linear-gradient(90deg,rgba(62,230,193,.12),rgba(139,124,255,.12));border-bottom:1px solid var(--rule);padding-block:10px;font-size:14px}
+.release .wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+.release a{color:var(--amber);text-decoration:none;font-weight:600}
+.live{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(62,230,193,.2);animation:pulse 1.6s infinite}
+.roi{display:grid;grid-template-columns:.9fr 1.1fr;gap:20px}
+.roi-in{display:grid;gap:10px;align-content:start}
+.roi-in label{display:flex;justify-content:space-between;gap:10px;font-size:15px;color:#C4C7D4}
+.roi-in label b{font:600 16px var(--mono);color:var(--amber)}
+.roi-in input{width:100%;accent-color:var(--amber);margin-bottom:10px}
+.roi-out{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.big-out{display:grid;gap:8px;align-content:start;padding:20px}
+.bn{font:600 clamp(30px,4vw,44px)/1.05 var(--mono);color:var(--teal);font-variant-numeric:tabular-nums}
+.big-out.hl{background:var(--amber);border-color:var(--amber)}
+.unit{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:18px;overflow:hidden;margin-top:20px}
+.unit div{background:var(--ink);padding:18px 20px;display:grid;gap:4px}
+.unit b{font:600 24px var(--mono);color:var(--text)}
+.unit span{font-size:13px;color:var(--muted)}
+.cmpx{display:grid;gap:12px}
+.cmpx div{display:grid;gap:8px;border-top:1px solid var(--rule);padding-top:12px}
+.cmpx p{margin:0;color:#C4C7D4}
+.cmpx .tag{justify-self:start}
+.why{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.why div{background:var(--panel);border:1px solid var(--rule);border-radius:18px;padding:18px;display:grid;gap:8px;align-content:start}
+.why .tag{justify-self:start}
+.why h3{font-size:17px}
+.why p{margin:0;font-size:14px;color:var(--muted)}
+.fb{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+#fbForm{display:grid;gap:10px}
+#fbForm label,#fbForm legend{font-size:14px;color:#C4C7D4}
+#fbForm select,#fbForm textarea{width:100%;background:#07080C;border:1px solid var(--rule);border-radius:10px;color:var(--text);font:15px var(--sans);padding:10px 12px;margin-bottom:6px}
+.stars-in{border:0;padding:0;margin:0 0 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stars-in legend{width:100%;margin-bottom:8px}
+.stars-in input{position:absolute;opacity:0;width:1px;height:1px}
+.stars-in label{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--rule);border-radius:12px;cursor:pointer;font:600 15px var(--mono)}
+.stars-in input:checked+label{background:var(--amber);color:#1A1205!important;border-color:var(--amber)}
+.stars-in input:focus-visible+label{outline:2px solid var(--amber);outline-offset:2px}
+.fb-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.credits{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.credits div{border:1px solid var(--rule);border-radius:14px;padding:14px 16px;display:grid;gap:4px}
+.credits b{font-size:16px}
+.credits span{font-size:13px;color:var(--muted)}
+@media (max-width:900px){
+  .roi,.fb{grid-template-columns:1fr}
+  .why{grid-template-columns:1fr 1fr}
+  .unit{grid-template-columns:1fr}
+  .hero .wrap,.story,.tgrid,.scout,.mcp{grid-template-columns:1fr}
+  .agents{grid-template-columns:1fr}
+  .handoff svg{transform:rotate(90deg)}
+  .detail{grid-template-columns:1fr}
+  .road,.steps{grid-template-columns:1fr 1fr}
+  .clock{grid-template-columns:1fr;gap:18px}
+  .clock::before{display:none}
+  .nl a:not(.pill){display:none}
+  .card{width:270px;margin-left:-135px;height:380px}
+  .bar{grid-template-columns:110px 1fr 30px}
+}
+@media (max-width:560px){.road,.steps{grid-template-columns:1fr}.rings{gap:18px}.ring svg{width:116px;height:116px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<nav class="g">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="MEMO home">memo<b>_</b></a>
+    <div class="nl">
+      <a href="#value">Value</a>
+      <a href="#how">How it works</a>
+      <a href="#agents">Agents</a>
+      <a href="#proof">Proof</a>
+      <a href="#faq">FAQ</a>
+      <a class="pill a" href="#start">Get MEMO</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+<div class="release g"><div class="wrap"><span class="live"></span><b>MEMO V1 released · 24 October 2026</b><span class="muted">Stay tuned for V2: the night-shift agents.</span><a href="#agents">See what's next →</a></div></div>
+<!-- HERO -->
+<header class="hero g">
+  <canvas id="graph" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">09:02 AM · new session</div>
+      <h1>Your AI woke up with <span class="strike">amnesia.</span><br><span class="serif">a memory.</span></h1>
+      <p class="lead">Last night you fixed the bug at 11:47 PM. This morning Claude still knows. MEMO gives every coding session yesterday's brain, and soon it will keep working while you sleep.</p>
+      <div class="ctas">
+        <a class="pill a" href="https://github.com/sunil5151/Whisper_Flow_v1" target="_blank" rel="noopener">Download free ↗</a>
+        <a class="pill" href="#how">See how it works</a>
+      </div>
+      <div class="cmd"><span id="c1">memo install</span><button class="copy" data-copy="c1" type="button">Copy</button></div>
+      <div class="chips">
+        <span class="chip"><b>≈15 hrs</b> saved / month*</span>
+        <span class="chip"><b>≤ $5</b> / month to run</span>
+        <span class="chip"><b>$0.00005</b> per bug found</span>
+      </div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">*Default estimate below. Change it to your own numbers.</p>
+    </div>
+    <div></div>
+  </div>
+</header>
+
+<!-- VALUE / PROFIT -->
+<section class="g" id="value" style="padding-block:72px">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow" style="color:var(--teal)">What it's worth</div><h2>Costs cents. <span class="serif" style="color:var(--teal)">Saves hours.</span></h2><p>Move the sliders to your own numbers. The cost side is measured; the time side is your estimate.</p></div>
+    <div class="roi">
+      <div class="box roi-in">
+        <label for="s1">Minutes lost re-explaining per session <b id="v1">10</b></label><input id="s1" type="range" min="2" max="30" value="10">
+        <label for="s2">AI coding sessions per day <b id="v2">4</b></label><input id="s2" type="range" min="1" max="12" value="4">
+        <label for="s3">Working days per month <b id="v3">22</b></label><input id="s3" type="range" min="5" max="30" value="22">
+        <label for="s4">Your hourly rate (₹) <b id="v4">500</b></label><input id="s4" type="range" min="100" max="5000" step="100" value="500">
+      </div>
+      <div class="roi-out">
+        <div class="box big-out"><span class="eyebrow" style="color:var(--muted)">Time saved per month</span><div class="bn" id="o1">14.7 h</div></div>
+        <div class="box big-out"><span class="eyebrow" style="color:var(--muted)">Value of that time</span><div class="bn" id="o2">₹7,333</div></div>
+        <div class="box big-out"><span class="eyebrow" style="color:var(--muted)">MEMO running cost</span><div class="bn" style="color:var(--text)">≤ ₹420</div><span class="muted" style="font-size:13px">$5 monthly cap · ₹0 on Groq free tier</span></div>
+        <div class="box big-out hl"><span class="eyebrow" style="color:#1A1205">Return</span><div class="bn" id="o3" style="color:#1A1205">17×</div><span style="font-size:13px;color:#3A2A0A">value ÷ maximum monthly cost</span></div>
+      </div>
+    </div>
+    <div class="unit">
+      <div><b>$0.00005</b><span>to find one bug with the Scout agent (measured)</span></div>
+      <div><b>$0.08</b><span>a year to scan a repo once a day at that rate</span></div>
+      <div><b>0</b><span>servers to run: it lives on your laptop and in your repo</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAYCARDS -->
+<section class="g deck-wrap" aria-label="What MEMO keeps">
+  <div class="wrap">
+    <div class="deck" id="deck">
+      <article class="card">
+        <div class="ct">Open tasks · 3 waiting</div>
+        <div class="rows">
+          <div class="row sel"><b>Add refund endpoint</b><span>Next step from Tuesday</span></div>
+          <div class="row"><b>Webhook retries</b><span>Raised during review</span></div>
+          <div class="row"><b>Write README</b><span>Done · proved by commit</span></div>
+        </div>
+        <div class="tagline">Tasks</div>
+      </article>
+      <article class="card">
+        <div class="ct"><span class="dot"></span>Live capture</div>
+        <div class="quote">"Signature fails on the parsed body."</div>
+        <div class="quote dim">"Fixed. Verify on the raw body."</div>
+        <div class="btns" style="margin-top:auto"><span class="b">1 error found</span><span class="b">→ fixed ✓</span></div>
+        <div class="tagline" style="margin-top:8px">Errors</div>
+      </article>
+      <article class="card hot">
+        <div class="ct" style="color:rgba(255,255,255,.75)">01 / 07 record types</div>
+        <div class="big" style="margin-top:auto">Razorpay,<br>not Stripe.</div>
+        <div style="color:rgba(255,255,255,.8);font-size:14px">Decided Monday · remembered every day since</div>
+        <div class="tagline">Decisions</div>
+      </article>
+      <article class="card">
+        <div class="ct">Issue Scout · GitHub</div>
+        <div class="quote">4 issues filed for $0.00021.</div>
+        <div class="rows">
+          <div class="row"><b>README is empty</b><span>Fixed ✓</span></div>
+          <div class="row"><b>No LICENSE file</b><span>Fixed ✓</span></div>
+        </div>
+        <div class="tagline">Scout agent</div>
+      </article>
+      <article class="card paper">
+        <div class="big" style="font-size:34px;overflow-wrap:anywhere">PROJECT_<br>STATE.md</div>
+        <div style="font-size:13px;color:#6B665A">Auto-written · every 15 min</div>
+        <div class="lines"><i style="width:92%"></i><i style="width:70%"></i><i style="width:84%"></i><i style="width:55%"></i><i style="width:76%"></i></div>
+        <div class="tagline">Memory file</div>
+      </article>
+      <article class="card">
+        <div class="ct">npm test</div>
+        <div class="big" style="color:var(--teal)">172 / 172</div>
+        <div class="rows">
+          <div class="row"><b>91.6% lines</b><span>93% functions covered</span></div>
+        </div>
+        <div class="tagline">Tested</div>
+      </article>
+    </div>
+    <p class="deck-cap">MEMO turns each coding session into decisions, errors and tasks, then hands them to the next session. Speak it, type it or let the hooks catch it.</p>
+    <div class="dots" id="dots"></div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section class="g" id="story">
+  <div class="wrap story">
+    <div>
+      <div class="sh"><div class="eyebrow" style="color:var(--red)">The story every dev knows</div><h2>Two hours of debugging. <span class="serif" style="color:var(--muted)">Gone by morning.</span></h2></div>
+      <div class="tl" id="tl">
+        <div><div class="t">11:47 PM</div><div class="x">You finally fix the webhook bug.</div></div>
+        <div><div class="t">12:03 AM</div><div class="x" style="color:#C9C5D6">You close the laptop. Relief.</div></div>
+        <div class="bad"><div class="t">09:02 AM</div><div class="x">"Let's install Stripe and parse the JSON body…"</div></div>
+        <div class="fade"><div class="t">09:03 AM</div><div class="x">Same bug. Again.</div></div>
+      </div>
+    </div>
+    <div class="box" style="display:grid;gap:18px">
+      <div class="eyebrow" style="color:var(--muted)">Why this happens</div>
+      <p style="margin:0;font-size:18px">AI coding tools have no memory between sessions. Close the chat and everything it learned about your project is gone.</p>
+      <div class="cmpx">
+        <div><span class="tag bad">Without MEMO</span><p>You paste the same background every morning. The AI repeats mistakes you already fixed.</p></div>
+        <div><span class="tag ok">With MEMO</span><p>The AI opens each session already knowing your decisions, past bugs and what's next.</p></div>
+      </div>
+      <p class="muted" style="margin:0;font-size:14px">Think of it as a diary the AI reads before it starts work, written for it automatically.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="g" id="how">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow">Under the hood</div><h2>Seven steps from your session to tomorrow's context.</h2><p>Tap any step to see what really happens inside the code.</p></div>
+    <div class="pipe">
+      <svg viewBox="0 0 1100 300" xmlns="http://www.w3.org/2000/svg" font-family="Geist Mono, monospace" id="pipesvg">
+        <defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs>
+        <g fill="none" stroke="url(#lg)" stroke-width="2.4">
+          <path id="p1" d="M150 150 L190 150"/><path id="p2" d="M330 150 C 360 150 360 80 390 80"/><path id="p3" d="M330 150 C 360 150 360 220 390 220"/>
+          <path id="p4" d="M530 80 C 560 80 560 150 590 150"/><path id="p5" d="M530 220 C 560 220 560 150 590 150"/><path id="p6" d="M730 150 L 770 150"/><path id="p7" d="M910 150 C 940 150 940 70 960 70"/>
+        </g>
+        <g fill="#FFE2A8">
+          <circle r="4"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur="1.6s" begin=".8s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur="1.6s" begin=".4s" repeatCount="indefinite"><mpath href="#p4"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur="1.6s" begin="1.2s" repeatCount="indefinite"><mpath href="#p5"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur="1s" repeatCount="indefinite"><mpath href="#p6"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur="1.4s" begin=".3s" repeatCount="indefinite"><mpath href="#p7"/></animateMotion></circle>
+          <circle r="4"><animateMotion dur=".8s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+        </g>
+        <g class="node" data-i="0"><rect x="10" y="105" width="140" height="90" rx="16" fill="#0D0F16" stroke="#8B7CFF"/><text x="80" y="140" text-anchor="middle" fill="#B9B0FF" font-size="11" letter-spacing="2">YOU CODE</text><text x="80" y="166" text-anchor="middle" fill="#EEEBF3" font-size="14">Claude Code</text></g>
+        <g class="node" data-i="1"><rect x="190" y="105" width="140" height="90" rx="16" fill="#0D0F16" stroke="#2B3044"/><text x="260" y="140" text-anchor="middle" fill="#8C90A4" font-size="11" letter-spacing="2">1 · HOOKS</text><text x="260" y="166" text-anchor="middle" fill="#EEEBF3" font-size="14">4 events</text></g>
+        <g class="node" data-i="2"><rect x="390" y="35" width="140" height="90" rx="16" fill="#0D0F16" stroke="#2B3044"/><text x="460" y="70" text-anchor="middle" fill="#8C90A4" font-size="11" letter-spacing="2">2 · CAPTURE</text><text x="460" y="96" text-anchor="middle" fill="#EEEBF3" font-size="14">new bytes only</text></g>
+        <g class="node" data-i="3"><rect x="390" y="175" width="140" height="90" rx="16" fill="#0D0F16" stroke="#2B3044"/><text x="460" y="210" text-anchor="middle" fill="#8C90A4" font-size="11" letter-spacing="2">3 · REDACT</text><text x="460" y="236" text-anchor="middle" fill="#EEEBF3" font-size="14">keys stripped</text></g>
+        <g class="node" data-i="4"><rect x="590" y="105" width="140" height="90" rx="16" fill="#0D0F16" stroke="#2B3044"/><text x="660" y="140" text-anchor="middle" fill="#8C90A4" font-size="11" letter-spacing="2">4 · EXTRACT</text><text x="660" y="166" text-anchor="middle" fill="#EEEBF3" font-size="14">LLM, ≤12k tok</text></g>
+        <g class="node" data-i="5"><rect x="770" y="105" width="140" height="90" rx="16" fill="#0D0F16" stroke="#2B3044"/><text x="840" y="140" text-anchor="middle" fill="#8C90A4" font-size="11" letter-spacing="2">5 · VALIDATE</text><text x="840" y="166" text-anchor="middle" fill="#EEEBF3" font-size="14">evidence check</text></g>
+        <g class="node" data-i="6"><rect x="960" y="25" width="130" height="90" rx="16" fill="#15100A" stroke="#FFB547" stroke-width="2"/><text x="1025" y="60" text-anchor="middle" fill="#FFB547" font-size="11" letter-spacing="2">6 · RECALL</text><text x="1025" y="86" text-anchor="middle" fill="#EEEBF3" font-size="14">next session</text></g>
+        <text x="840" y="240" text-anchor="middle" fill="#8C90A4" font-size="12">writes .memory/records/*.jsonl</text>
+        <text x="840" y="260" text-anchor="middle" fill="#8C90A4" font-size="12">+ PROJECT_STATE.md</text>
+      </svg>
+    </div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- TESTING -->
+<section class="g" id="proof">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow">How well it is tested</div><h2>Measured, <span class="serif" style="color:var(--teal)">not promised.</span></h2><p>A memory tool sees your project's history and sometimes your secrets. If it saves one wrong fact, every future session repeats it. So we test the parts that could hurt you most.</p></div>
+    <div class="why">
+      <div><span class="tag ok">17 tests</span><h3>Your keys never leak</h3><p>API keys, tokens and .env lines are removed before anything is saved or sent.</p></div>
+      <div><span class="tag ok">18 tests</span><h3>The AI can't fake progress</h3><p>"Done" needs a passing test as proof. Made-up claims are caught and downgraded.</p></div>
+      <div><span class="tag ok">22 tests</span><h3>Nothing gets lost</h3><p>Sessions are captured even after crashes or compaction, without duplicates.</p></div>
+      <div><span class="tag ok">8 tests</span><h3>You stay in control</h3><p>Delete one record or a whole day, and it never comes back.</p></div>
+    </div>
+    <div class="tgrid">
+      <div class="box gauge">
+        <svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="92" fill="none" stroke="#161925" stroke-width="16"/><circle id="gArc" cx="110" cy="110" r="92" fill="none" stroke="url(#gg)" stroke-width="16" stroke-linecap="round" transform="rotate(-90 110 110)" stroke-dasharray="530 578"/><defs><linearGradient id="gg"><stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#3EE6C1"/></linearGradient></defs><text x="110" y="112" text-anchor="middle" fill="#EEEBF3" font-family="Geist Mono, monospace" font-size="40" font-weight="600">91.6%</text><text x="110" y="140" text-anchor="middle" fill="#8C90A4" font-family="Geist Mono, monospace" font-size="12">lines covered</text></svg>
+        <div class="mini"><div><b>172</b><span>tests</span></div><div><b>93%</b><span>functions</span></div><div><b>75%</b><span>branches</span></div></div>
+        <div class="mini"><div><b>0</b><span>failing</span></div><div><b>20</b><span>test files</span></div><div><b>3.1k</b><span>test lines</span></div></div>
+      </div>
+      <div class="box">
+        <h3 style="font-size:20px;margin-bottom:6px">Tests per area</h3>
+        <p class="muted" style="margin:0 0 18px;font-size:14px">The riskiest parts get the most tests: what the model writes, what gets redacted, and what gets captured.</p>
+        <div class="bars pre" id="bars">
+          <div class="bar"><span>Extraction</span><div class="tr"><i style="transform:scaleX(.91)"></i></div><span class="n">20</span></div>
+          <div class="bar"><span>Model output checks</span><div class="tr"><i style="transform:scaleX(.82)"></i></div><span class="n">18</span></div>
+          <div class="bar"><span>Secret redaction</span><div class="tr"><i style="transform:scaleX(.77)"></i></div><span class="n">17</span></div>
+          <div class="bar"><span>Provider HTTP</span><div class="tr"><i style="transform:scaleX(.68)"></i></div><span class="n">15</span></div>
+          <div class="bar"><span>Session capture</span><div class="tr"><i style="transform:scaleX(1)"></i></div><span class="n">22</span></div>
+          <div class="bar"><span>Records &amp; delete</span><div class="tr"><i style="transform:scaleX(.73)"></i></div><span class="n">16</span></div>
+          <div class="bar"><span>Install &amp; Windows</span><div class="tr"><i style="transform:scaleX(.64)"></i></div><span class="n">14</span></div>
+          <div class="bar"><span>Reports &amp; context</span><div class="tr"><i style="transform:scaleX(.59)"></i></div><span class="n">13</span></div>
+        </div>
+        <div class="weak"><span class="tag ok">capture · redact · validate: covered</span><span class="tag warn">scheduler 37%</span><span class="tag warn">menu 42%</span><span class="tag warn">key storage 53%</span></div>
+        <p class="muted" style="margin:12px 0 0;font-size:13px">Lower numbers are Windows-only PowerShell paths that a Linux test run cannot execute.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCOUT LIVE -->
+<section class="g">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow" style="color:var(--teal)">Working today · Scout agent</div><h2>It already reads the repo and files issues.</h2><p>A GitHub Action sends the repo summary to GLM-5.3-flash, checks every past issue so nothing repeats, and opens new ones.</p></div>
+    <div class="scout">
+      <div class="box">
+        <div class="ct mono" style="color:var(--muted);font-size:13px;margin-bottom:14px">First run · 23 Oct 2026 · 4 issues</div>
+        <div class="issue-list">
+          <div class="issue done"><i class="ic"></i><span class="ttl">README is an empty placeholder</span><span class="tag ok">fixed</span></div>
+          <div class="issue done"><i class="ic"></i><span class="ttl">No LICENSE file despite MIT in package.json</span><span class="tag ok">fixed</span></div>
+          <div class="issue done"><i class="ic"></i><span class="ttl">package.json lacks essential metadata</span><span class="tag ok">fixed</span></div>
+          <div class="issue done"><i class="ic"></i><span class="ttl">Missing requirements.txt for Python tooling</span><span class="tag ok">fixed</span></div>
+        </div>
+        <p class="muted" style="margin:14px 0 0;font-size:14px">All 4 were fixed in the repo within a day.</p>
+      </div>
+      <div class="box">
+        <div class="eyebrow" style="color:var(--muted)">Cost of that run</div>
+        <div class="costbig" style="margin-top:14px">$0.00021</div>
+        <div class="kv">
+          <div><b>4</b><span>issues filed</span></div>
+          <div><b>$0.00005</b><span>per issue</span></div>
+          <div><b>1,337</b><span>tokens used</span></div>
+          <div><b>~20,000</b><span>runs for $1</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NIGHT SHIFT -->
+<section class="night g" id="agents">
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="moon" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow" style="color:var(--moon)">Version 2 · Night shift</div><h2>It remembers today.<br><span class="serif" style="color:var(--moon)">Tomorrow it works while you sleep.</span></h2><p>Two agents share one memory. The Scout finds the work, the Worker does it, and you wake up to a draft pull request.</p></div>
+    <div class="agents">
+      <div class="agent">
+        <div class="av" style="background:rgba(62,230,193,.12);color:var(--teal)">S</div>
+        <div class="tag ok" style="justify-self:start">Agent 1 · running today</div>
+        <h3>Scout</h3>
+        <p>Reads the repo on a schedule and turns problems into GitHub issues.</p>
+        <ul><li>Skips anything it already reported</li><li>Costs about $0.00005 per issue</li><li>Adds each issue to MEMO as an open task</li></ul>
+      </div>
+      <div class="handoff" aria-hidden="true">
+        <svg viewBox="0 0 120 40"><path d="M5 20 H110" stroke="#C9C1FF" stroke-width="2" stroke-dasharray="5 6"/><path d="M102 12 L112 20 L102 28" fill="none" stroke="#C9C1FF" stroke-width="2"/><circle r="4" fill="#FFE2A8"><animateMotion dur="1.6s" repeatCount="indefinite" path="M5 20 H110"/></circle></svg>
+        <span>issue + memory<br>context</span>
+      </div>
+      <div class="agent">
+        <div class="av" style="background:rgba(139,124,255,.16);color:var(--moon)">W</div>
+        <div class="tag v" style="justify-self:start">Agent 2 · in development</div>
+        <h3>Worker</h3>
+        <p>Picks one open issue, loads MEMO's decisions and past errors, writes the fix and runs the tests.</p>
+        <ul><li>Knows "Razorpay, not Stripe" before it starts</li><li>Opens a draft PR only if tests pass</li><li>Never merges. You do.</li></ul>
+      </div>
+    </div>
+    <div class="clock">
+      <div><i></i><b>11 PM</b><span>You close the laptop</span></div>
+      <div><i></i><b>12 AM</b><span>Scout files 3 issues</span></div>
+      <div><i></i><b>1 AM</b><span>Worker loads memory, writes fix</span></div>
+      <div><i></i><b>3 AM</b><span>Tests run: 172/172</span></div>
+      <div><i></i><b>9 AM</b><span>Draft PR waiting for your review</span></div>
+    </div>
+    <div class="safe"><span class="tag v">Human approves every merge</span><span class="tag v">Same evidence check as V1</span><span class="tag v">Budget cap applies</span></div>
+  </div>
+</section>
+
+<!-- MCP -->
+<section class="g">
+  <div class="wrap mcp">
+    <div>
+      <div class="sh" style="margin-bottom:24px"><div class="eyebrow">Version 2 · Memory socket</div><h2>Plug in, don't dig through files.</h2><p>Today an agent reads PROJECT_STATE.md at session start. In V2, MEMO becomes an MCP server: any agent asks for exactly the memory it needs, the moment it needs it.</p></div>
+      <div class="vs">
+        <div class="box"><h3>Today · V1</h3><p class="muted" style="margin:0;font-size:15px">Context is pasted once at SessionStart, up to 8,000 characters. Claude Code only.</p></div>
+        <div class="box" style="border-color:#4A3B12"><h3 style="color:var(--amber)">V2 · MCP socket</h3><p class="muted" style="margin:0;font-size:15px">Live tool calls from any MCP client: Claude, Cursor, Codex and the Worker agent.</p>
+          <div class="tools"><code>get_context()</code><code>open_tasks()</code><code>add_note()</code><code>search_records()</code></div></div>
+      </div>
+    </div>
+    <svg viewBox="0 0 460 420" xmlns="http://www.w3.org/2000/svg" font-family="Geist Mono, monospace" aria-hidden="true">
+      <defs><radialGradient id="cg"><stop offset="0" stop-color="#FFB547" stop-opacity=".55"/><stop offset="1" stop-color="#FFB547" stop-opacity="0"/></radialGradient></defs>
+      <circle cx="230" cy="210" r="140" fill="url(#cg)"/>
+      <g stroke="#FFB547" stroke-width="1.8" fill="none" opacity=".8">
+        <path id="m1" d="M80 70 Q 150 120 230 210"/><path id="m2" d="M380 70 Q 310 120 230 210"/><path id="m3" d="M80 350 Q 150 300 230 210"/><path id="m4" d="M380 350 Q 310 300 230 210"/>
+      </g>
+      <g fill="#FFE2A8">
+        <circle r="4"><animateMotion dur="1.8s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#m1"/></animateMotion></circle>
+        <circle r="4"><animateMotion dur="1.8s" begin=".45s" repeatCount="indefinite"><mpath href="#m2"/></animateMotion></circle>
+        <circle r="4"><animateMotion dur="1.8s" begin=".9s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#m3"/></animateMotion></circle>
+        <circle r="4"><animateMotion dur="1.8s" begin="1.3s" repeatCount="indefinite"><mpath href="#m4"/></animateMotion></circle>
+      </g>
+      <circle cx="230" cy="210" r="62" fill="#15100A" stroke="#FFB547" stroke-width="2"/>
+      <text x="230" y="205" text-anchor="middle" fill="#FFB547" font-size="15" font-weight="600">memo</text>
+      <text x="230" y="226" text-anchor="middle" fill="#8C90A4" font-size="11">MCP server</text>
+      <g font-size="13" text-anchor="middle">
+        <rect x="20" y="40" width="120" height="44" rx="12" fill="#0D0F16" stroke="#2B3044"/><text x="80" y="67" fill="#EEEBF3">Claude Code</text>
+        <rect x="320" y="40" width="120" height="44" rx="12" fill="#0D0F16" stroke="#2B3044"/><text x="380" y="67" fill="#EEEBF3">Cursor</text>
+        <rect x="20" y="330" width="120" height="44" rx="12" fill="#0D0F16" stroke="#2B3044"/><text x="80" y="357" fill="#EEEBF3">Codex · GPT</text>
+        <rect x="320" y="330" width="120" height="44" rx="12" fill="#0D0F16" stroke="#8B7CFF"/><text x="380" y="357" fill="#C9C1FF">Worker agent</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="g">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow">Roadmap</div><h2>Where MEMO goes next.</h2></div>
+    <div class="road">
+      <div class="rs" style="--c:var(--teal)"><div class="k">V1 · SHIPPED</div><h3>Memory for Claude Code</h3><p>Capture, extract, recall. Groq, Anthropic, OpenAI or any compatible endpoint.</p></div>
+      <div class="rs" style="--c:var(--teal)"><div class="k">V1.5 · WORKING</div><h3>Scout agent</h3><p>GitHub Action that files deduplicated issues for fractions of a cent.</p></div>
+      <div class="rs" style="--c:var(--amber)"><div class="k">V2 · BUILDING</div><h3>Worker + MCP socket</h3><p>Night-shift fixes as draft PRs, memory served live to any agent.</p></div>
+      <div class="rs" style="--c:var(--violet)"><div class="k">V2+ · PLANNED</div><h3>More agents</h3><p>Codex CLI capture adapter, subagent transcripts, cross-session merging.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="g" id="faq">
+  <div class="wrap">
+    <div class="sh center"><div class="eyebrow">FAQ</div><h2>Questions judges ask.</h2></div>
+    <div class="faq">
+      <details open>
+        <summary><span><span class="feat">MOST ASKED</span>What if the AI remembers something wrong?</span></summary>
+        <div class="a">
+          <p>Three guards stop bad memory from spreading.</p>
+          <p><b>1. Strict checks on model output.</b> Every record is validated before it is saved. Unknown fields are dropped, types and statuses must match a fixed list, and file paths must stay inside the repo.</p>
+          <p><b>2. Proof before "done".</b> A task can only be marked done, or an error marked verified, if a passing command result backs it. Without that, MEMO downgrades the claim and flags it.</p>
+          <p><b>3. You can delete anything.</b> <code class="mono">memo clear --record &lt;id&gt;</code> removes one record, <code class="mono">--session</code> removes a whole session, and a tombstone stops it from being re-imported. Everything is plain Markdown and JSONL you can read and edit.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Does my code leave my machine?</summary>
+        <div class="a"><p>File contents never do. Each API call sends the repo folder name, up to 60 open records and one redacted batch of session events, capped at 12,000 tokens. Keys, .env files, .pem and .key files are stripped before anything is written. Set the provider to <span class="mono">mock</span> and no network call happens at all.</p></div>
+      </details>
+      <details>
+        <summary>How is this different from CLAUDE.md?</summary>
+        <div class="a"><p>CLAUDE.md is a file you write and keep updated by hand. MEMO writes and updates its memory on its own from what actually happened in your sessions, tracks status (open, fixed, done) with evidence, and keeps it in your repo so teammates get it too.</p></div>
+      </details>
+      <details>
+        <summary>What does it cost to run?</summary>
+        <div class="a"><p>Groq is the default and has a free tier. MEMO has a default monthly budget cap of $5 and an optional daily token cap. The Scout agent's first run cost $0.00021 for 4 issues.</p></div>
+      </details>
+      <details>
+        <summary>Does it work on Mac and Linux?</summary>
+        <div class="a"><p>Yes. Capture, extraction and recall work everywhere with Node 20+. Windows gets the scheduled task set up automatically; on Mac and Linux you add one cron line that runs <span class="mono">memo cycle</span>.</p></div>
+      </details>
+      <details>
+        <summary>Will the Worker agent push code without me?</summary>
+        <div class="a"><p>No. The Worker only opens a draft pull request, and only when the test suite passes. Merging is always your decision.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- START -->
+<section class="g" id="start">
+  <div class="wrap">
+    <div class="sh"><div class="eyebrow">Get started</div><h2>Three steps. Then just code.</h2><p>Needs Node 20+ and Git.</p></div>
+    <ol class="steps">
+      <li><h3>Download</h3><p>Clone and install once. On Windows, setup_memo.bat also registers the background task.</p><code>git clone https://github.com/sunil5151/Whisper_Flow_v1</code><code>node bin/memo.js install</code></li>
+      <li><h3>Activate a repo</h3><p>Turn MEMO on inside your project and add a model key.</p><code>memo init</code><code>memo key set</code></li>
+      <li><h3>Code as usual</h3><p>Open Claude Code. Check health any time.</p><code>memo status</code><code>memo context</code></li>
+    </ol>
+    <div class="final">
+      <h2>Stop re-explaining.<br><span class="serif" style="color:var(--amber)">Start remembering.</span></h2>
+      <a class="pill a" href="https://github.com/sunil5151/Whisper_Flow_v1" target="_blank" rel="noopener">Get MEMO on GitHub ↗</a>
+    </div>
+  </div>
+</section>
+<!-- FEEDBACK -->
+<section class="g" id="feedback">
+  <div class="wrap fb">
+    <div class="sh" style="margin:0"><div class="eyebrow">Feedback</div><h2>Tell us what to build next.</h2><p>Judges, testers, developers: your answer shapes V2. It goes privately to the builder.</p></div>
+    <form class="box" id="fbForm" novalidate>
+      <fieldset class="stars-in" id="rate"><legend>How useful is MEMO to you?</legend>
+        <input type="radio" name="r" id="r1" value="1"><label for="r1">1</label>
+        <input type="radio" name="r" id="r2" value="2"><label for="r2">2</label>
+        <input type="radio" name="r" id="r3" value="3"><label for="r3">3</label>
+        <input type="radio" name="r" id="r4" value="4"><label for="r4">4</label>
+        <input type="radio" name="r" id="r5" value="5"><label for="r5">5</label>
+      </fieldset>
+      <label for="fbWant">Which V2 feature do you want first?</label>
+      <select id="fbWant"><option value="worker">Night-shift Worker agent</option><option value="mcp">MCP memory socket</option><option value="agents">More AI tools (Cursor, Codex)</option><option value="other">Something else</option></select>
+      <label for="fbText">Anything else? Bugs, ideas, questions</label>
+      <textarea id="fbText" rows="4" maxlength="1500" placeholder="I'd use this if…"></textarea>
+      <div class="fb-row"><button class="pill a" type="submit" id="fbBtn">Send feedback</button><span id="fbMsg" class="muted" role="status"></span></div>
+    </form>
+  </div>
+</section>
+
+<!-- CREDITS -->
+<section class="g" style="padding-block:56px">
+  <div class="wrap">
+    <div class="eyebrow" style="color:var(--muted);margin-bottom:18px">Built with</div>
+    <div class="credits">
+      <div><b>Claude</b><span>Planning, code and this site</span></div>
+      <div><b>VS Code</b><span>Editor</span></div>
+      <div><b>Gemini Flash 3.8</b><span>AI assistant</span></div>
+      <div><b>GPT</b><span>AI assistant</span></div>
+      <div><b>GLM-5.3-flash</b><span>Powers the Scout agent</span></div>
+      <div><b>Google Search</b><span>Research</span></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="g"><div class="wrap"><span>memo_ V1 · released 24 Oct 2026 · built by Sunil for No Hands: The Wispr Challenge</span><span>MIT licensed</span></div></footer>
+
+<script>
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* copy */
+document.querySelectorAll('.copy[data-copy]').forEach(b=>b.addEventListener('click',()=>{
+  const el=document.getElementById(b.dataset.copy);
+  const ok=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1500)};
+  const fb=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected'};
+  try{navigator.clipboard.writeText(el.textContent).then(ok,fb)}catch(e){fb()}
+}));
+
+/* hero memory graph */
+(function(){
+  const c=document.getElementById('graph'),x=c.getContext('2d');let W,H,dpr,nodes=[],parts=[],mouse={x:-999,y:-999};
+  const cols=['#8B7CFF','#FF6B6B','#3EE6C1','#FFB547','#8B7CFF','#3EE6C1','#FF6B6B','#FFB547','#8B7CFF'];
+  const labels=['decision','error 401','fixed ✓','next: refunds','learning','task done','question','intent','fact'];
+  function size(){dpr=Math.min(devicePixelRatio||1,2);W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);build()}
+  function core(){return W>900?{x:W*.74,y:H*.5}:{x:W*.5,y:H*.82}}
+  function build(){const k=core(),R=Math.min(W>900?W*.2:W*.42,260);nodes=labels.map((l,i)=>{const a=i/labels.length*Math.PI*2-.4;const r=R*(.75+.25*((i*37)%10)/10);return{l,c:cols[i],bx:k.x+Math.cos(a)*r,by:k.y+Math.sin(a)*r*.85,ph:i*1.3,born:i*260}});
+    parts=nodes.map((n,i)=>({n,t:(i*.13)%1}))}
+  let t0=performance.now();
+  function frame(now){const t=(now-t0)/1000,k=core();x.clearRect(0,0,W,H);
+    const g=x.createRadialGradient(k.x,k.y,0,k.x,k.y,220);g.addColorStop(0,'rgba(255,181,71,.28)');g.addColorStop(1,'rgba(255,181,71,0)');x.fillStyle=g;x.beginPath();x.arc(k.x,k.y,220,0,7);x.fill();
+    const vg=x.createRadialGradient(k.x,k.y,0,k.x,k.y,480);vg.addColorStop(0,'rgba(139,124,255,.16)');vg.addColorStop(1,'rgba(139,124,255,0)');x.fillStyle=vg;x.beginPath();x.arc(k.x,k.y,480,0,7);x.fill();
+    nodes.forEach(n=>{let px=n.bx+Math.sin(t*.6+n.ph)*8,py=n.by+Math.cos(t*.5+n.ph)*8;const dx=mouse.x-px,dy=mouse.y-py,d=Math.hypot(dx,dy);if(d<140){px+=dx*(1-d/140)*.25;py+=dy*(1-d/140)*.25}n.x=px;n.y=py;
+      const a=RM?1:Math.min(1,Math.max(0,(now-t0-n.born)/600));n.a=a;
+      x.strokeStyle='rgba(255,181,71,'+(.12+.35*a)+')';x.lineWidth=1.3;x.beginPath();x.moveTo(px,py);const mx=(px+k.x)/2+(py-k.y)*.15,my=(py+k.y)/2-(px-k.x)*.15;n.mx=mx;n.my=my;x.quadraticCurveTo(mx,my,k.x,k.y);x.stroke()});
+    x.strokeStyle='rgba(60,66,92,.5)';x.lineWidth=1;x.beginPath();nodes.forEach((n,i)=>{const m=nodes[(i+1)%nodes.length];x.moveTo(n.x,n.y);x.lineTo(m.x,m.y)});x.stroke();
+    parts.forEach(p=>{if(!RM)p.t=(p.t+.006)%1;const n=p.n,u=p.t,iu=1-u;const px=iu*iu*n.x+2*iu*u*n.mx+u*u*k.x,py=iu*iu*n.y+2*iu*u*n.my+u*u*k.y;x.fillStyle='rgba(255,226,168,'+(.9*n.a)+')';x.beginPath();x.arc(px,py,2.6,0,7);x.fill()});
+    x.font='500 12px "Geist Mono", monospace';
+    nodes.forEach(n=>{x.globalAlpha=n.a;x.fillStyle=n.c;x.shadowColor=n.c;x.shadowBlur=14;x.beginPath();x.arc(n.x,n.y,6.5,0,7);x.fill();x.shadowBlur=0;if(W>560){x.fillStyle='rgba(220,218,235,.75)';x.fillText(n.l,n.x+12,n.y+4)}x.globalAlpha=1});
+    x.fillStyle='#120D04';x.strokeStyle='#FFB547';x.lineWidth=2;x.beginPath();x.arc(k.x,k.y,44+Math.sin(t*2)*2,0,7);x.fill();x.stroke();
+    x.fillStyle='#FFB547';x.font='600 14px "Geist Mono", monospace';x.textAlign='center';x.fillText('.memory',k.x,k.y+5);x.textAlign='left';
+    if(!RM)requestAnimationFrame(frame)}
+  addEventListener('resize',size);c.parentElement.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top});
+  c.parentElement.addEventListener('pointerleave',()=>{mouse.x=mouse.y=-999});
+  size();requestAnimationFrame(frame);
+})();
+
+/* playcards carousel */
+(function(){
+  const cards=[...document.querySelectorAll('#deck .card')],dots=document.getElementById('dots');let cur=2,timer;
+  cards.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Show card '+(i+1));b.onclick=()=>{go(i);reset()};dots.appendChild(b);c.onclick=()=>{go(i);reset()}});
+  function go(i){cur=(i+cards.length)%cards.length;const w=innerWidth<900?200:340;
+    cards.forEach((c,j)=>{let o=j-cur;if(o>cards.length/2)o-=cards.length;if(o<-cards.length/2)o+=cards.length;const ab=Math.abs(o);
+      c.style.transform=`translateX(${o*w}px) translateZ(${-ab*90}px) rotateY(${o*-14}deg) scale(${ab?1-.04*ab:1.04})`;
+      c.style.opacity=ab>2?0:1-ab*.18;c.style.filter=ab?`brightness(${1-ab*.22})`:'none';c.style.zIndex=10-ab;c.setAttribute('aria-hidden',ab?'true':'false')});
+    [...dots.children].forEach((d,j)=>d.classList.toggle('on',j===cur))}
+  function reset(){clearInterval(timer);if(!RM)timer=setInterval(()=>go(cur+1),3200)}
+  go(cur);reset();addEventListener('resize',()=>go(cur));
+})();
+
+/* ROI calculator */
+(function(){
+  const g=id=>document.getElementById(id),fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+  function calc(){const m=+g('s1').value,s=+g('s2').value,d=+g('s3').value,r=+g('s4').value;
+    g('v1').textContent=m;g('v2').textContent=s;g('v3').textContent=d;g('v4').textContent=r.toLocaleString('en-IN');
+    const h=m*s*d/60,v=h*r;g('o1').textContent=h.toFixed(1)+' h';g('o2').textContent=fmt(v);g('o3').textContent=Math.max(1,Math.round(v/420))+'×'}
+  ['s1','s2','s3','s4'].forEach(i=>g(i).addEventListener('input',calc));calc();
+})();
+
+/* feedback (db) */
+(function(){
+  const f=document.getElementById('fbForm'),msg=document.getElementById('fbMsg'),btn=document.getElementById('fbBtn');
+  let db=null,me=null,ready=false;
+  (async()=>{try{if(!window.claude)return;const [d,u]=await Promise.all([claude.use('db'),claude.use('user')]);db=d;
+    if(db&&u){me=await u.id();ready=!!me;if(ready){const s=await db.doc('feedback/'+me).get();if(s&&s.exists){msg.textContent='Thanks! Your earlier feedback is saved. Send again to update it.'}}}}catch(e){}})();
+  f.addEventListener('submit',async e=>{e.preventDefault();
+    const r=(f.querySelector('input[name=r]:checked')||{}).value;
+    if(!r){msg.textContent='Pick a rating from 1 to 5 first.';return}
+    if(!ready){msg.textContent='Sign in to claude.ai to send feedback, or open an issue on GitHub.';return}
+    btn.disabled=true;msg.textContent='Sending…';
+    try{await db.doc('feedback/'+me).set({rating:+r,wants:document.getElementById('fbWant').value,text:document.getElementById('fbText').value.trim().slice(0,1500),at:new Date().toISOString()});
+      msg.textContent='Sent. Thank you!';}
+    catch(err){msg.innerHTML='Feedback is closed for this link. Please <a href="https://github.com/sunil5151/Whisper_Flow_v1/issues" target="_blank" rel="noopener">open a GitHub issue</a> instead.'}
+    btn.disabled=false});
+})();
+
+/* rings (removed) */
+(function(){ if(!document.getElementById('rings'))return;
+  const labels={'78.5':'devs use AI tools','3.1':'highly trust them','66':'get "almost right" answers','45':'debug AI code longer'};
+  const rings=[...document.querySelectorAll('.ring')];const C=2*Math.PI*58;
+  rings.forEach(r=>{const v=+r.dataset.v;r.innerHTML=`<svg viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="#161925" stroke-width="13"/><circle class="arc" cx="70" cy="70" r="58" fill="none" stroke="${r.dataset.c}" stroke-width="13" stroke-linecap="round" transform="rotate(-90 70 70)" stroke-dasharray="${C*v/100} ${C}"/><text x="70" y="78" text-anchor="middle" fill="#EEEBF3" font-family="Geist Mono, monospace" font-size="24" font-weight="600" class="num">${r.dataset.v}%</text></svg><p>${labels[r.dataset.v]}</p>`});
+  function play(){rings.forEach(r=>{const v=+r.dataset.v,arc=r.querySelector('.arc'),num=r.querySelector('.num');const s=performance.now();
+    (function f(n){const p=Math.min(1,(n-s)/1300),e=1-Math.pow(1-p,3),cv=v*e;arc.setAttribute('stroke-dasharray',`${C*cv/100} ${C}`);num.textContent=(v%1?cv.toFixed(1):Math.round(cv))+'%';if(p<1)requestAnimationFrame(f)})(s)})}
+  if(!RM&&'IntersectionObserver' in window){let done=false;new IntersectionObserver(es=>{if(!done&&es[0].isIntersecting){done=true;play()}},{threshold:.4}).observe(document.getElementById('rings'))}
+})();
+
+/* story timeline lighting */
+(function(){
+  if(RM||!('IntersectionObserver' in window))return;const items=[...document.querySelectorAll('#tl > div')];
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const i=items.indexOf(e.target);items.forEach((d,j)=>{d.style.opacity=j===i?1:j<i?.4:.7})}}),{rootMargin:'-45% 0px -45% 0px'});
+  items.forEach(d=>io.observe(d));
+})();
+
+/* bars */
+(function(){const b=document.getElementById('bars');if(RM||!('IntersectionObserver' in window)){b.classList.remove('pre');return}
+  new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){b.classList.remove('pre');o.disconnect()}},{threshold:.3}).observe(b);
+  setTimeout(()=>b.classList.remove('pre'),4000)})();
+
+/* pipeline detail */
+(function(){
+  const D=[
+    {k:'START',h:'You code with Claude Code',l:['Nothing to change in how you work.','MEMO only acts in repos where you ran memo init.'],c:'$ memo init\nready capture  Claude Code hooks installed'},
+    {k:'STEP 1 · HOOKS',h:'Four hook events',l:['SessionStart, Stop, PreCompact and SessionEnd call memo capture.','Hooks always exit 0, so a MEMO problem can never break your session.','A git post-commit hook links work to commits.'],c:'~/.claude/settings.json\n  SessionStart → memo capture\n  Stop         → memo capture'},
+    {k:'STEP 2 · CAPTURE',h:'Reads only what is new',l:['Keeps a byte offset per transcript and reads only new lines.','Thinking blocks, file contents, Read results and images are dropped.','If the transcript is rewritten on compaction, it resets safely; event IDs prevent duplicates.'],c:'.memory/sessions/2026/10/23/<sid>.jsonl'},
+    {k:'STEP 3 · REDACT',h:'Secrets removed, twice',l:['Strips sk-ant-, sk-proj-, AKIA keys, bearer tokens and NAME=value lines.','Runs once when writing to disk and again before building the prompt.','Paths matching .env, *.pem, *.key, id_rsa, secrets/** are never stored.'],c:'"key: sk-ant-api03-…"  →  "key: [REDACTED]"'},
+    {k:'STEP 4 · EXTRACT',h:'One LLM call per batch',l:['memo cycle runs every 15 minutes under a lock.','Sends up to 60 open records plus one batch of events, max 12,000 tokens.','Uses strict JSON schema where the provider supports it. Budget caps stop spend.'],c:'provider: groq · model: openai/gpt-oss-20b\nmonthlyBudgetUsd: 5'},
+    {k:'STEP 5 · VALIDATE',h:'Nothing unverified gets in',l:['Unknown fields dropped, types and statuses enforced, paths must stay in the repo.','"done" or "verified" needs a passing command as evidence, or it is downgraded.','Model output is never executed and never changes config.'],c:'.memory/records/decisions.jsonl\n.memory/records/errors.jsonl\n.memory/records/tasks.jsonl'},
+    {k:'STEP 6 · RECALL',h:'The next session starts informed',l:['On SessionStart, memo context prints the project state into Claude\'s context.','Up to 8,000 characters: open tasks, open errors, active decisions.','PROJECT_STATE.md and TASKS.md regenerate for humans too.'],c:'$ memo context\nOpen tasks:\n- Add refund endpoint\nActive decisions:\n- Use Razorpay, not Stripe'}
+  ];
+  const det=document.getElementById('detail'),nodes=[...document.querySelectorAll('.node')];
+  function show(i){const d=D[i];nodes.forEach((n,j)=>n.classList.toggle('on',j===i));
+    det.innerHTML=`<div><div class="k">${d.k}</div><h3 style="margin-top:8px">${d.h}</h3><div class="hint">Tap another step ↑</div></div><div><ul>${d.l.map(x=>`<li>${x}</li>`).join('')}</ul><pre>${d.c.replace(/</g,'&lt;')}</pre></div>`}
+  nodes.forEach((n,i)=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.addEventListener('click',()=>show(i));n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i)}})});
+  show(4);
+})();
+
+/* stars */
+(function(){
+  const c=document.getElementById('stars'),x=c.getContext('2d');let W,H,s=[];
+  function size(){const d=Math.min(devicePixelRatio||1,2);W=c.clientWidth;H=c.clientHeight;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);s=Array.from({length:Math.round(W*H/7000)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.3,p:Math.random()*6}))}
+  function f(n){x.clearRect(0,0,W,H);s.forEach(t=>{x.fillStyle=`rgba(201,193,255,${.25+.6*Math.abs(Math.sin(n/1400+t.p))})`;x.beginPath();x.arc(t.x,t.y,t.r,0,7);x.fill()});if(!RM)requestAnimationFrame(f)}
+  addEventListener('resize',size);size();requestAnimationFrame(f);
+})();
+</script>
+
+</body></html>
